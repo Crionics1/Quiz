@@ -1,11 +1,12 @@
 'use strict';
 
-module.exports = (sequelize, DataTypes) => {
-    const QuizUser = sequelize.define('QuizUser',
-        {
-            Points: DataTypes.INTEGER
-        }
-    )
+module.exports= (sequelize, DataTypes) => {
+    const QuizUser = sequelize.define('QuizUser')
 
-    return QuizUser
+    QuizUser.assosiacte = (models) => {
+        models.QuizUser.belongsToMany(models.QuizQuestion, {through: models.QuizQuestionAnswer})
+        models.QuizUser.belongsToMany(models.QuestionAnswer, {through: models.QuizQuestionAnswer})
+    }
+    
+    return QuizUser;
 }

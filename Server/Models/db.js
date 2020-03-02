@@ -9,7 +9,7 @@ const db = {};
 const sequelize = new Sequelize('db', 'user', 'pass', {
     host: 'localhost',
     dialect: 'sqlite',
-    storage: 'DB/db.sqlite',
+    storage: './Server/Models/db.sqlite',
     operatorsAliases: false
 });
 

@@ -2,7 +2,8 @@
 
 module.exports = (sequelize, DataTypes) => {
     const Quiz = sequelize.define('Quiz',{
-        GameStatus : DataTypes.STRING
+            GameStatus : DataTypes.INTEGER,
+            MaxQuestions: DataTypes.INTEGER
         }
     )
 

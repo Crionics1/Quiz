@@ -1,11 +1,16 @@
 'use strict';
 
 module.exports= (sequelize, DataTypes) => {
-    const QuizUser = sequelize.define('QuizUser')
+    const QuizUser = sequelize.define('QuizUser',{
+        Id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+        }
+    })
 
     QuizUser.assosiacte = (models) => {
-        models.QuizUser.belongsToMany(models.QuizQuestion, {through: models.QuizQuestionAnswer})
-        models.QuizUser.belongsToMany(models.QuestionAnswer, {through: models.QuizQuestionAnswer})
+        models.QuizUser.hasMany( models.QuizAnswer)
     }
     
     return QuizUser;

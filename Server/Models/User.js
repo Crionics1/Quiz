@@ -3,25 +3,30 @@
 module.exports= (sequelize, DataTypes) => {
     const User = sequelize.define('User',
         {
-            FirstName: DataTypes.STRING,
-            LastName: DataTypes.STRING,
-            PrivateID: DataTypes.STRING,
-            Password: DataTypes.STRING,
-        },
-        {
-            indexes: [
-                {
-                    unique: true,
-                    fields: ['PrivateID']
-                }
-            ]
+            FirstName:{
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            LastName: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            PrivateID: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                unique: true
+            },
+            Password: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
         }
     )
 
     User.assosiacte = (models) => {
         models.User.hasMany(models.Quiz)
-        models.User.hasMany(models.QuizQuestion)
         models.User.belongsToMany(models.Quiz, { through: models.QuizUser })
+        models.User.hasMany(models.Session)
     }
     
     return User;

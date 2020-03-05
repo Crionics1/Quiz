@@ -7,30 +7,36 @@ const cookieParser = require('cookie-parser');
 
 const app = express()
 
+async function getUserID(req){
+    let id = await models.Session.findOne({
+        where: {token: req.cookies['token']}
+    })
+
+    return id;
+}
 
 app.use(bodyParser.json());
 app.use(cookieParser());
+app.use('/r', async function(req,res,next){
+    req.requestTime = Date.now()
+    req.clientID = (await getUserID(req))
+
+    if (req.clientID == null){
+        res.sendStatus(401)
+        return
+    }
+
+    next()
+});
+
+//  AUTHENTICATION ACTIONS
 
 app.get('/', function (req, res) {
     res.send('hello world')
 })
 
-app.post('/checksession', function (req, res) {
-    if (req.cookies['token'] == null) {
-        res.sendStatus(401)
-        return;
-    }
-
-    models.Session.findOne({where: {Token: req.cookies['token']}})
-        .then(s => {
-                if (s == null) {
-                    res.sendStatus(401)
-                    return;
-                }
-
-                res.send(JSON.stringify(s))
-            }
-        )
+app.post('/r/checksession', function (req, res) {
+    res.send(JSON.stringify(req.clientID))
 })
 
 app.post('/register', function (req, res) {
@@ -70,9 +76,122 @@ app.post('/login', function (req, res) {
 })
 
 
+//QUIZ ACTIONS
+
+app.post('/r/Quiz'), function(req, res){
+
+
+    models.sequelize.create({
+        gameStatus: 1
+        //todo
+    })
+}
+
 db.sequelize.sync({
     force: true
-}).then(() => {
+}).then(async () => {
+// seed database
+    await models.User.create({
+        firstName: 'luka',
+        lastName: 'turmanidze',
+        privateID: '6100107',
+        password: '123'
+    }) 
+
+    await models.Question.bulkCreate([
+        {
+            condition: 'which is A?',
+            points: 2,
+            QuestionAnswers: [
+                {
+                    answer: 'A',
+                    isTrue: true
+                },{
+                    answer: 'B',
+                    isTrue: false
+                },{
+                    answer: 'C',
+                    isTrue: false
+                },{
+                    answer: 'D',
+                    isTrue: false
+                }
+            ]
+        },
+        {
+            condition: 'which is B?',
+            points: 2,
+            QuestionAnswers: [
+                {
+                    answer: 'A',
+                    isTrue: false
+                },{
+                    answer: 'B',
+                    isTrue: true
+                },{
+                    answer: 'C',
+                    isTrue: false
+                },{
+                    answer: 'D',
+                    isTrue: false
+                }
+            ]
+        },
+        {
+            condition: 'which is C?',
+            points: 2,
+            QuestionAnswers: [
+                {
+                    answer: 'A',
+                    isTrue: false
+                },{
+                    answer: 'B',
+                    isTrue: false
+                },{
+                    answer: 'C',
+                    isTrue: true
+                },{
+                    answer: 'D',
+                    isTrue: false
+                }
+            ]
+        },
+        {
+            condition: 'which is D?',
+            points: 2,
+            QuestionAnswers: [
+                {
+                    answer: 'A',
+                    isTrue: false
+                },{
+                    answer: 'B',
+                    isTrue: false
+                },{
+                    answer: 'C',
+                    isTrue: false
+                },{
+                    answer: 'D',
+                    isTrue: true
+                }
+            ]
+        }
+        ],
+        {
+            include: [{
+                association: models.Question.Answers
+            }]
+        })
+
+    models.Question.findAndCountAll({
+        include:[{
+            model: models.QuestionAnswer
+        }]
+    }).then(
+        q => 
+            console.log(JSON.stringify(q,null,2))
+    )
+
+
     app.listen(5555, () => {
         console.log('Example app listening on port 5555!')
     })

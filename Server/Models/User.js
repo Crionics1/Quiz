@@ -1,30 +1,31 @@
 'use strict';
 
-module.exports= (sequelize, DataTypes) => {
+module.exports = (sequelize, DataTypes) => {
+    //class User extends sequelize.Model{}
     const User = sequelize.define('User',
         {
-            FirstName:{
+            firstName:{
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            LastName: {
+            lastName: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            PrivateID: {
+            privateID: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 unique: true
             },
-            Password: {
+            password: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
         }
     )
 
-    User.assosiacte = (models) => {
-        models.User.hasMany(models.Quiz)
+    User.associate = (models) => {
+        models.User.Quizzes = models.User.hasMany(models.Quiz)
         models.User.belongsToMany(models.Quiz, { through: models.QuizUser })
         models.User.hasMany(models.Session)
     }

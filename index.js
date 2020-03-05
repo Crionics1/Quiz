@@ -8,6 +8,10 @@ const cookieParser = require('cookie-parser');
 const app = express()
 
 async function getUserID(req){
+    if(req.cookies['token'] == null || req.cookies['token'] == undefined){
+        return null
+    }
+
     let id = await models.Session.findOne({
         where: {token: req.cookies['token']}
     })
@@ -17,7 +21,7 @@ async function getUserID(req){
 
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use('/r', async function(req,res,next){
+app.use('/r/', async function(req,res,next){
     req.requestTime = Date.now()
     req.clientID = (await getUserID(req))
 
@@ -75,17 +79,37 @@ app.post('/login', function (req, res) {
         })
 })
 
+app.post('/', function (req,res){
+    res.send(JSON.stringify(true))
+})
 
-//QUIZ ACTIONS
+///QUIZ ACTIONS
 
-app.post('/r/Quiz'), function(req, res){
+app.post('/quiz' ,async function(req, res){
+    const t = await db.sequelize.transaction();
+    try{
+        let q = await models.Quiz.create({
+            gameStatus: 1,
+            UserID : req.clientID 
+        },{transaction :t});
+        await q.setQuestions(req.body.questions,{ transaction: t })
+        console.log(JSON.stringify(q.null,2))
+        await t.commit();
 
+        res.sendStatus(201);
+    } catch (error) {
+        await t.rollack();
+        res.sendStatus(500);
+    }
+})
 
-    models.sequelize.create({
-        gameStatus: 1
-        //todo
-    })
-}
+app.get('/quizquestions',async function(req,res){
+    let quiz = await models.Quiz.findByPk(req.query.quizid,{include:[
+        {model: models.Question, include:[{model: models.QuestionAnswer,attributes: ['answer']}]}
+    ]})
+
+    res.send(JSON.stringify(question.rows, null, 2))
+})
 
 db.sequelize.sync({
     force: true

@@ -59,7 +59,7 @@ app.post('/register', function (req, res) {
 })
 
 app.post('/login', function (req, res) {
-    models.User.findOne({where: {PrivateID: req.body.privateid, Password: req.body.password}})
+    models.User.findOne({where: {privateID: req.body.privateid, password: req.body.password}})
         .then(u => {
             if (u == null) {
                 res.sendStatus(400)
@@ -92,23 +92,60 @@ app.post('/quiz' ,async function(req, res){
             gameStatus: 1,
             UserID : req.clientID 
         },{transaction :t});
-        await q.setQuestions(req.body.questions,{ transaction: t })
-        console.log(JSON.stringify(q.null,2))
+        q.Questions = await q.setQuestions(req.body.questions,{ transaction: t })
+        q.Users = await q.setUsers(req.clientID, {transaction: t})
+
+        console.log(JSON.stringify(q,null,2))
         await t.commit();
 
         res.sendStatus(201);
     } catch (error) {
-        await t.rollack();
+        await t.rollback();
         res.sendStatus(500);
     }
 })
 
 app.get('/quizquestions',async function(req,res){
-    let quiz = await models.Quiz.findByPk(req.query.quizid,{include:[
-        {model: models.Question, include:[{model: models.QuestionAnswer,attributes: ['answer']}]}
-    ]})
+    let quiz = await models.Quiz.findByPk(req.query.quizid,
+        {
+            include:[
+                {model: models.Question, 
+                    include:[{model: models.QuestionAnswer,attributes: ['answer']}]}
+            ]
+    })
 
-    res.send(JSON.stringify(question.rows, null, 2))
+    res.send(JSON.stringify(quiz, null, 2))
+})
+
+app.get('/quiz', async function(req,res){
+    let quizzes = await models.Quiz.findAll({where: {gameStatus: 1}})
+
+    res.send(JSON.stringify(quizzes, null, 2))
+})
+
+app.post('/joinquiz',async function(req,res){
+    let quiz = await models.Quiz.findByPk(req.query.quizid)
+
+    if(quiz == null){
+        res.sendStatus(404);
+    }
+        
+    try{
+        await models.QuizUser.create({
+            QuizID: quiz.id,
+            UserID: req.clientID
+        })
+
+        res.sendStatus(200);
+    }catch{
+        res.sendStatus(500);
+    }
+})
+
+app.get('/quizmembers', async function(req,res){
+    let quizusers = await models.QuizUser.findAll({where: {QuizID: req.query.quizid}},{include : [{model: models.User}]});
+
+    res.send(JSON.stringify(quizusers,null,2))
 })
 
 db.sequelize.sync({

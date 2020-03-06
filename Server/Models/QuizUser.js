@@ -10,6 +10,8 @@ module.exports= (sequelize, DataTypes) => {
     })
 
     QuizUser.assosiacte = (models) => {
+        models.QuizUser.belongsTo(models.Quiz)
+        models.QuizUser.belongsTo(models.User)
         models.QuizUser.hasMany( models.QuizAnswer)
     }
     

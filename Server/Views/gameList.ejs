@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Quizzes</title>
+    </head>
+    <body>
+        <form action="/r/quiz" method="post" id="form" enctype='application/json' style="max-width: 20%">
+            <div id="questions1"
+                 style="border: black solid 2px;border-bottom: none; display: flex; flex-direction: column; padding: 10px">
+                <button type="button" onclick="addSelect()" > + </button>
+                <select id="select" name="questions"></select>
+            </div>
+
+            <div id="questions2"
+                 style="border: black solid 2px; display: flex; flex-direction: column; margin-bottom: 5px; padding: 10px">
+                <button type="button" onclick="addCustomQuestion()">Add Custom Question</button>
+            </div>
+
+            <button type="submit">Create Quiz</button>
+        </form>
+
+        <table>
+
+        </table>
+
+        <script src="jquery-1.9.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
+        <script src="//cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+        <script>
+            //const socket = io.connect("localhost:4000")
+            let questions = []
+            function addSelect(){
+                let div = $("#questions1")
+                div.append($("#select").clone(true,true))
+            }
+
+            function addCustomQuestion(){
+                let div = $("#questions2")
+                div.append("<input name='customQuestions' type='text'>")
+                div.append("<input name='customQuestionPoints' type='number'>")
+            }
+
+            $.getJSON('/question', function(data){
+                questions = data;
+
+                let select = $("#select")
+                data.map(q => {
+                    select.append(`<option value=${q.id}> ${q.condition} </option>`)
+                })
+            })
+
+            $.getJSON("/quiz", function (data) {
+
+            })
+        </script>
+    </body>
+</html>

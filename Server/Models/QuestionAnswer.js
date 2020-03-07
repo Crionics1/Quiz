@@ -12,8 +12,8 @@ module.exports= (sequelize, DataTypes) => {
     })
 
     QuestionAnswer.associate = (models) => {
-        models.QuestionAnswer.Question = models.QuestionAnswer.belongsTo(models.Question)
-        models.QuestionAnswer.hasMany(models.QuizAnswer)
+        models.QuestionAnswer.Question = models.QuestionAnswer.belongsTo(models.Question, {foreignKey: 'questionId'})
+        models.QuestionAnswer.hasMany(models.QuizAnswer,{foreignKey:'questionAnswerId'})
     }
 
     return QuestionAnswer

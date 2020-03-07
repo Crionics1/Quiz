@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Quizzes</title>
+    </head>
+    <body>
+        <input type="text" id="privateId" name="privateId">
+        <input type="password" id="password" name="password" >
+
+        <button type="submit" onclick="login()">
+        <script src="jquery-1.9.1.min.js"></script>
+        <script>
+            function login(){
+                let privateId = $("#privateId").val()
+                let password = $("#password").val()
+                $.post('/login', {privateId: privateId, password: password }, function(data){
+                    console.log(data)
+                })
+                .then(s=> {
+                    window.location = '/quizlist';
+                })
+            }
+        </script>
+    </body>
+</html>

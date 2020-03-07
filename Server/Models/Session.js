@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     })
 
     Session.associate = (models) => {
-        models.Session.belongsTo(models.User)
+        models.Session.User = models.Session.belongsTo(models.User,{foreignKey: 'userId'})
     }
 
     return Session;

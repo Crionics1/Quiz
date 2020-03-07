@@ -25,9 +25,12 @@ module.exports = (sequelize, DataTypes) => {
     )
 
     User.associate = (models) => {
-        models.User.Quizzes = models.User.hasMany(models.Quiz)
-        models.User.belongsToMany(models.Quiz, { through: models.QuizUser })
-        models.User.hasMany(models.Session)
+        models.User.belongsToMany(models.Quiz,{through :models.QuizUser, foreignKey:'userId'})
+        models.User.hasMany(models.QuizUser, {foreignKey: 'userId'})
+
+        models.User.Quizzes = models.User.hasMany(models.Quiz, {foreignKey: 'adminId'})
+
+        models.User.hasMany(models.Session, {foreignKey: 'userId'})
     }
     
     return User;

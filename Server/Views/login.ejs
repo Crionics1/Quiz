@@ -8,7 +8,8 @@
         <input type="text" id="privateId" name="privateId">
         <input type="password" id="password" name="password" >
 
-        <button type="submit" onclick="login()">
+        <button type="submit" onclick="login()">Login</button>
+
         <script src="jquery-1.9.1.min.js"></script>
         <script>
             function login(){
@@ -17,10 +18,11 @@
                 $.post('/login', {privateId: privateId, password: password }, function(data){
                     console.log(data)
                 })
-                .then(s=> {
-                    window.location = '/quizlist';
-                })
+                    .then(s=> {
+                        window.location = '/quizlist';
+                    })
             }
+
         </script>
     </body>
 </html>

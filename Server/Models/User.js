@@ -30,6 +30,7 @@ module.exports = (sequelize, DataTypes) => {
 
         models.User.Quizzes = models.User.hasMany(models.Quiz, {foreignKey: 'adminId'})
 
+        models.User.hasMany(models.QuizAnswer,{foreignKey: 'userId'})
         models.User.hasMany(models.Session, {foreignKey: 'userId'})
     }
     

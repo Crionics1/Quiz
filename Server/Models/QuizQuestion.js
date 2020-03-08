@@ -6,11 +6,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true
-        }
+        },
+        countDownStart: DataTypes.DATE
     })
 
     QuizQuestion.associate = (models) => {
-        models.QuizQuestion.hasMany(models.QuizAnswer,{foreignKey:'quizQuestionId'})
         models.QuizQuestion.belongsTo(models.Quiz,{foreignKey:'quizId'})
         models.QuizQuestion.belongsTo(models.Question,{foreignKey:'questionId'})
     }

@@ -8,7 +8,7 @@
         <form action="/r/quiz" method="post" id="form" enctype='application/json' style="max-width: 20%">
             <div id="questions1"
                  style="border: black solid 2px;border-bottom: none; display: flex; flex-direction: column; padding: 10px">
-                <button type="button" onclick="addSelect()" > + </button>
+                <button type="button" onclick="addQuestion()" > + </button>
                 <select id="select" name="questions"></select>
             </div>
 
@@ -20,17 +20,27 @@
             <button type="submit">Create Quiz</button>
         </form>
 
-        <table>
-
+        <table id="table">
+            <thead>
+                <th>QuizID</th>
+                <th>QuizAuthor</th>
+                <th></th>
+            </thead>
         </table>
 
         <script src="jquery-1.9.1.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
-        <script src="//cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
         <script>
-            //const socket = io.connect("localhost:4000")
             let questions = []
-            function addSelect(){
+            $.getJSON('/question', function(data){
+                questions = data;
+
+                let select = $("#select")
+                data.map(q => {
+                    select.append(`<option value=${q.id}> ${q.condition} </option>`)
+                })
+            })
+
+            function addQuestion(){
                 let div = $("#questions1")
                 div.append($("#select").clone(true,true))
             }
@@ -41,17 +51,17 @@
                 div.append("<input name='customQuestionPoints' type='number'>")
             }
 
-            $.getJSON('/question', function(data){
-                questions = data;
 
-                let select = $("#select")
-                data.map(q => {
-                    select.append(`<option value=${q.id}> ${q.condition} </option>`)
-                })
-            })
 
             $.getJSON("/quiz", function (data) {
-
+                let table =  $("#table")
+                data.map(quiz => {
+                    let row = table.append(`<tr></tr>`)
+                    for(const property in quiz){
+                        row.append(`<td>${quiz[property]}</td>`)
+                    }
+                    row.append(`<td><a href="/quiz/${quiz.id}">Join</a></td>`)
+                })
             })
         </script>
     </body>

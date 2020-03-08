@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Game: <%=quizId%></title>
+</head>
+<body>
+    <button onclick="startQuiz()"> Start Game </button>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
+    <script>
+        debugger
+        let quizId = <%=quizId%>
+
+        const socket = io.connect("localhost:5555")
+        socket.emit('joinQuiz', {quizId: quizId})
+
+        socket.on('question',function (data) {
+            console.log(data);
+        })
+
+        function startQuiz(){
+            $.post(`/r/startQuiz/${quizId}`,function () {
+
+            })
+        }
+    </script>
+</body>
+</html>

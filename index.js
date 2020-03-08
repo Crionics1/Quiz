@@ -1,21 +1,24 @@
 const uuid = require('uuid');
 const express = require('express')
+const path = require('path');
 const db = require('./Server/Models/db')
 const models = require('./Server/models/db');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const socket = require("socket.io")
 const ejs = require("ejs");
+const cookie = require('cookie');
 
 const app = express()
+var io = {};
 
-async function getUserID(req){
-    if(req.cookies['token'] == null || req.cookies['token'] == undefined){
+async function getUserID(token){
+    if(token == undefined ||token == null ){
         return null
     }
 
     let session = await models.Session.findOne({
-        where: {token: req.cookies['token']}
+        where: {token: token}
     })
     if (session == null){
         return null;
@@ -29,74 +32,89 @@ app.set("view engine", "ejs");
 
 // Look for view files in the view directory
 app.set("views", __dirname + "/Server/Views");
-app.use(express.static(__dirname + "/public"));
+app.use(express.static(path.join(__dirname + "/Public")));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use('/r/', async function(req,res,next){
-    req.requestTime = Date.now()
-    req.clientID = await getUserID(req)
-
-    if (req.clientID == null){
+    if (!req.cookies['token']){
         res.sendStatus(401)
         return
     }
 
+    req.requestTime = Date.now()
+    req.clientID = await getUserID(req.cookies['token'])
+
     next()
 });
 
-
-
-//<editor-fold desc="Authentication">
+//<editor-fold desc="Views">
 
 app.get('/', function (req, res) {
     res.render('login')
 })
 
-app.post('/r/checksession', function (req, res) {
-    res.send(JSON.stringify(req.clientID))
+
+app.get('/quizlist', function(req,res){
+    res.render('gameList')
 })
 
-app.post('/register', function (req, res) {
-    models.User.create(
-        {
-            FirstName: req.body.firstname,
-            LastName: req.body.lastname,
-            PrivateID: req.body.privateid,
-            Password: req.body.password
-        }
-    ).then(u => {
-        res.send(JSON.stringify(u))
-    }).catch(r => {
-        res.status(400).send(r)
-    })
-})
-
-app.post('/login', async function (req, res) {
+app.get('/quiz/:quizId', async function(req,res){
     try{
-        let user = await models.User.findOne({where: {privateID: req.body.privateId, password: req.body.password}})
-        if (user == null) {
-            res.sendStatus(400)
-            return
-        }
-
-        const t = await db.sequelize.transaction();
-
-        let s = await models.Session.create({
-            Token: uuid.v4()
-        },{transaction: t})
-        await s.setUser(user.id, {transaction: t})
-
-        t.commit()
-
-        res.cookie('token', s.Token)
-        res.sendStatus(200);
-    }catch( error ){
-        t.rollback()
-        res.status(500)
-            .send(JSON.stringify('internal server error'))
+        let quiz = await models.Quiz.findByPk(req.params.quizId)
+        res.render('game', {quizId: quiz.id})
+    }catch(error){
+        res.sendStatus(404);
     }
 })
 
+//</editor-fold>
+
+//<editor-fold desc="Authentication">
+
+    app.post('/r/checksession', function (req, res) {
+        res.send(JSON.stringify(req.clientID))
+    })
+
+    app.post('/register', function (req, res) {
+        models.User.create(
+            {
+                FirstName: req.body.firstname,
+                LastName: req.body.lastname,
+                PrivateID: req.body.privateid,
+                Password: req.body.password
+            }
+        ).then(u => {
+            res.send(JSON.stringify(u))
+        }).catch(r => {
+            res.status(400).send(r)
+        })
+    })
+
+    app.post('/login', async function (req, res) {
+        try{
+            let user = await models.User.findOne({where: {privateID: req.body.privateId, password: req.body.password}})
+            if (user == null) {
+                res.sendStatus(400)
+                return
+            }
+
+            const t = await db.sequelize.transaction();
+
+            let s = await models.Session.create({
+                Token: uuid.v4()
+            },{transaction: t})
+            await s.setUser(user.id, {transaction: t})
+
+            t.commit()
+
+            res.cookie('token', s.Token)
+            res.sendStatus(200);
+        }catch( error ){
+            t.rollback()
+            res.status(500)
+                .send(JSON.stringify('internal server error'))
+        }
+    })
 
 //</editor-fold>
 
@@ -110,7 +128,7 @@ app.post('/r/quiz' ,async function(req, res){
         q.setUsers([req.clientID])
 
         //associate quiz with existing questions
-        if (req.body.questions || req.body.questions.length){
+        if (req.body.questions != undefined){
             let questions = []
             for(let i = 0 ;i < req.body.questions.length ; i ++){
                 questions[i] = {questionId: req.body.questions[i], quizId: q.id}
@@ -119,7 +137,7 @@ app.post('/r/quiz' ,async function(req, res){
         }
 
         //insert and associate quiz with custom questions
-        if (req.body.customQuestions || req.body.customQuestions.length){
+        if (req.body.customQuestions != undefined){
             let customQuestions = []
             for (let i=0;i < req.body.customQuestions.length; i++){
                 customQuestions[i] = {condition: req.body.customQuestions[i] ,points: req.body.customQuestionPoints[i], isCustom: true}
@@ -148,13 +166,12 @@ app.post('/r/quiz' ,async function(req, res){
 })
 
 app.get('/quiz', async function(req,res){
-    let quizzes = await models.Quiz.findAll({where: {gameStatus: 1}})
+    let quizzes = await models.Quiz.findAll({
+        where: {gameStatus: 1},
+        attributes: ['id', 'adminId']
+    })
 
     res.send(JSON.stringify(quizzes, null, 2))
-})
-
-app.get('/quizlist', async function(req,res){
-    res.render('gameList')
 })
 
 app.post('/r/joinquiz',async function(req,res){
@@ -177,24 +194,29 @@ app.post('/r/joinquiz',async function(req,res){
     }
 })
 
-app.post('/r/startquiz', async function(req,res) {
+app.post('/r/startquiz/:quizId', async function(req,res) {
     try{
-        let quiz = await models.Quiz.findOne({where: {id: req.body.quizid,gamestatus: 1}})
+        let quiz = await models.Quiz.findOne({where: {id: req.params.quizId, gameStatus: 1}})
 
         if (quiz == null){
             res.sendStatus(404)
             return
         }
 
+        if (quiz.adminId != req.clientID){
+            res.sendStatus(401);
+            return
+        }
+
         quiz.gameStatus = 2
         await quiz.save()
+
+        startQuiz(quiz.id)
 
         res.sendStatus(200)
     }catch(error){
         res.sendStatus(500)
     }
-
-
 })
 
 app.get('/quizmembers', async function(req,res){
@@ -219,7 +241,7 @@ app.get('/quizmembers', async function(req,res){
 })
 
 app.get('/quizquestions',async function(req,res){
-    let quiz = await db.sequelize.query("select * from quizquestions as QQ inner join questions as q on q.id = ")
+    let quiz = await models.QuizAnswer
 
     res.send(JSON.stringify(quiz, null, 2))
 })
@@ -354,24 +376,108 @@ db.sequelize.sync({
         console.log('Example app listening on port 5555!')
     })
 
-    var io = socket(server)
+    io = socket(server)
 
     io.use(async function(socket,next){
-        socket.cookie = socket.handshake.headers.cookie || socket.request.headers.cookie
+        let rawCookies = socket.handshake.headers.cookie
+        let cookies = cookie.parse(rawCookies)
+
 
         socket.requestTime = Date.now()
-        socket.clientID = await getUserID(req)
+        socket.clientID = await getUserID(cookies.token)
 
-        if (req.clientID == null){
+        if (socket.clientID == null){
             return
         }
 
         next()
     })
 
+    var socketUsers = []
     io.on("connection",function(socket){
-        console.log("Socket connection estabilished");
+
+        socket.on('joinQuiz', async function (msg) {
+            // check if user belongs to quiz
+            /*
+            let quiz = await models.Quiz.findOne({
+                where: {
+                    id: msg.quizId,
+                    gameStatus:{
+                        $or:[1,2]
+                    }
+                },
+                include: {
+                    model: models.QuizUser,
+                    where: {
+                        userId: socket.clientID,
+                    }
+                }
+            })
+
+            if (user == null){
+                return
+            }*/
+
+            socket.join(msg.quizId)
+        });
+
+        socketUsers.push({clientId: socket.clientId, socketId: socket.id})
+        console.log("Socket connection established");
     })
+
 })
 
+async function startQuiz(quizId){
+    gameControllers[quizId]={}
+    //EAGER LOADING MANY TO MANY
+    gameControllers[quizId].questions = await models.Question.findAll({
+        include: {
+            model: models.Quiz,
+            where: {
+                id: quizId
+            }
+        },
+        order:[['isCustom']]
+    })
+    gameControllers[quizId].quizQuestions = await models.QuizQuestion.findAll({
+        where: {
+            quizId: quizId
+        }
+    })
+    gameControllers[quizId].index = 0
+    gameControllers[quizId].initTimeout = setTimeout(async () => {
+        if (gameControllers[quizId].index == gameControllers[quizId].questions.length){
+            let quiz = await models.Quiz.findByPk(quizId);
+            quiz.gameStatus = 3
+            await quiz.save()
 
+            clearTimeout(gameControllers[quizId].timeout)
+        }
+
+
+        let date = Date.now()
+        date = new Date(date + 5)
+
+        let currentQuestion = gameControllers[quizId].questions[[gameControllers[quizId].index]]
+        let currentQuizQuestion = gameControllers[quizId].quizQuestions[[gameControllers[quizId].index]]
+        //set current question's countdown
+        currentQuizQuestion.countDownStart = date
+        await currentQuizQuestion.save()
+
+        //TODO: send question to users
+        io.in(quizId).emit('question', JSON.stringify(currentQuestion));
+
+        //if no more questions are left end timeout, and set game status to ended
+
+        // Prepare for next Question, increment question index
+        gameControllers[quizId].index++
+
+        //continue timeout if next question is not custom
+        if (currentQuestion.isCustom == false){
+            gameControllers[quizId].initTimeout(quizId)
+        }
+
+    },10000)
+}
+
+var gameControllers = []

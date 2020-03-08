@@ -12,9 +12,9 @@ module.exports = (sequelize, DataTypes) => {
     })
 
     QuizAnswer.associate = (models) => {
-        models.QuizAnswer.belongsTo(models.QuizUser, {foreignKey: 'quizUserId'})
-        models.QuizAnswer.belongsTo(models.QuizQuestion, {foreignKey: 'quizQuestionId'})
-        models.QuizAnswer.belongsTo(models.QuestionAnswer, {foreignKey: 'quizAnswerId'})
+        models.QuizAnswer.belongsTo(models.User, {foreignKey: 'userId'})
+        models.QuizAnswer.belongsTo(models.Question, {foreignKey: 'questionId'})
+        models.QuizAnswer.belongsTo(models.QuestionAnswer, {foreignKey: 'questionAnswerId'})
     }
 
     return QuizAnswer

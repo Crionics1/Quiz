@@ -7,14 +7,13 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             autoIncrement: true
         },
-        AnswerTime: DataTypes.DATE,
-        Points: DataTypes.INTEGER
+        answerTime: DataTypes.DATE
     })
 
     QuizAnswer.associate = (models) => {
         models.QuizAnswer.belongsTo(models.User, {foreignKey: 'userId'})
+        models.QuizAnswer.belongsTo(models.Quiz, {foreignKey: 'quizId'})
         models.QuizAnswer.belongsTo(models.Question, {foreignKey: 'questionId'})
-        models.QuizAnswer.belongsTo(models.QuestionAnswer, {foreignKey: 'questionAnswerId'})
     }
 
     return QuizAnswer

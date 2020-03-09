@@ -5,20 +5,6 @@
         <title>Quizzes</title>
     </head>
     <body>
-        <form action="/r/quiz" method="post" id="form" enctype='application/json' style="max-width: 20%">
-            <div id="questions1"
-                 style="border: black solid 2px;border-bottom: none; display: flex; flex-direction: column; padding: 10px">
-                <button type="button" onclick="addQuestion()" > + </button>
-                <select id="select" name="questions"></select>
-            </div>
-
-            <div id="questions2"
-                 style="border: black solid 2px; display: flex; flex-direction: column; margin-bottom: 5px; padding: 10px">
-                <button type="button" onclick="addCustomQuestion()">Add Custom Question</button>
-            </div>
-
-            <button type="submit">Create Quiz</button>
-        </form>
 
         <table id="table">
             <thead>
@@ -40,17 +26,33 @@
                 })
             })
 
+            /* no more needed
             function addQuestion(){
                 let div = $("#questions1")
                 div.append($("#select").clone(true,true))
             }
-
             function addCustomQuestion(){
                 let div = $("#questions2")
                 div.append("<input name='customQuestions' type='text'>")
                 div.append("<input name='customQuestionPoints' type='number'>")
             }
 
+            <form action="/r/quiz" method="post" id="form" enctype='application/json' style="max-width: 20%">
+                <div id="questions1"
+                     style="border: black solid 2px;border-bottom: none; display: flex; flex-direction: column; padding: 10px">
+                    <button type="button" onclick="addQuestion()" > + </button>
+                    <select id="select" name="questions"></select>
+                </div>
+
+                <div id="questions2"
+                     style="border: black solid 2px; display: flex; flex-direction: column; margin-bottom: 5px; padding: 10px">
+                    <button type="button" onclick="addCustomQuestion()">Add Custom Question</button>
+                </div>
+
+                <button type="submit">Create Quiz</button>
+            </form>
+
+            */
 
 
             $.getJSON("/quiz", function (data) {

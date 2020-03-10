@@ -7,11 +7,17 @@ module.exports= (sequelize, DataTypes) => {
             primaryKey: true,
             autoIncrement: true
         },
-        answer: DataTypes.STRING,
         isTrue: DataTypes.BOOLEAN
     })
 
     QuestionAnswer.associate = (models) => {
+        models.QuestionAnswer.hasMany(models.QuizAnswer,
+        {
+            foreignKey: {
+                name:'questionAnswerId',
+                allowNull: true
+            }
+        })
         models.QuestionAnswer.Question = models.QuestionAnswer.belongsTo(models.Question, {foreignKey: 'questionId'})
     }
 

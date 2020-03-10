@@ -92,7 +92,7 @@ app.use('/r/', async function(req,res,next){
 
     app.post('/login', async function (req, res) {
         try{
-            let user = await models.User.findOne({where: {privateID: req.body.privateId, password: req.body.password}})
+            let user = await models.User.findOne({where: {privateID: req.body.privateId}})
             if (user == null) {
                 res.sendStatus(400)
                 return
@@ -201,6 +201,25 @@ app.post('/r/startquiz/:quizId', async function(req,res) {
     }
 })
 
+app.post('/nextQuestion', async function(req,res){
+    let quizQuestion = models.QuizQuestion.findOne({
+        where: {
+            quizId: req.body.quizId,
+            countDownStart:{
+                [OP.not]: null
+            },
+            order:['id']
+        },
+        include:{
+            model:models.Question,
+            attributes: ['isCustom','condition']
+        }
+    })
+
+
+})
+
+//TODO
 app.get('/quizmembers', async function(req,res){
     let quiz = await models.User.findByPk(req.query.quizid,
         {
@@ -208,7 +227,8 @@ app.get('/quizmembers', async function(req,res){
             include:[{
                 model: models.Quiz,
                 where:{ id: req.body.quiz}
-            }]
+            }],
+            order: [['countDownStart','DESC']]
         }
     );
 
@@ -247,8 +267,7 @@ db.sequelize.sync({
     await models.User.create({
         firstName: 'luka',
         lastName: 'turmanidze',
-        privateID: 'admin',
-        password: '123'
+        privateID: 'admin'
     })
 
     await models.Question.bulkCreate([
@@ -367,13 +386,11 @@ db.sequelize.sync({
     io = socket(server)
 
     io.on("connection",function(socket){
-        socket.on('answer', async function (msg) {
+        socket.on('answer', async function (msg) { //get only answer id
             socket.requestTime = Date.now()
 
             let rawCookies = socket.handshake.headers.cookie
             let cookies = cookie.parse(rawCookies)
-
-            socket.clientID = await getUserID(cookies.token)
 
             let question = await models.QuizQuestion.findOne({
                 where: {
@@ -394,11 +411,13 @@ db.sequelize.sync({
                 return
             }
 
+            socket.clientID = await getUserID(cookies.token)
+
             await models.QuizAnswer.create({
                 answerTime: socket.requestTime,
                 userId: socket.ClientId,
                 questionId: msg.questionId,
-                answerId : msg.answerId
+                questionAnswerId : msg.answerId
             })
 
         });

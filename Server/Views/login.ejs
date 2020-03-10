@@ -6,16 +6,15 @@
     </head>
     <body>
         <input type="text" id="privateId" name="privateId">
-        <input type="password" id="password" name="password" >
 
         <button type="submit" onclick="login()">Login</button>
 
-        <script src="jquery-1.9.1.min.js"></script>
+        <script src="/jquery-1.9.1.min.js"></script>
         <script>
             function login(){
                 let privateId = $("#privateId").val()
                 let password = $("#password").val()
-                $.post('/login', {privateId: privateId, password: password }, function(data){
+                $.post('/login', {privateId: privateId}, function(data){
                     console.log(data)
                 })
                     .then(s=> {

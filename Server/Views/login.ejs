@@ -13,12 +13,11 @@
         <script>
             function login(){
                 let privateId = $("#privateId").val()
-                let password = $("#password").val()
                 $.post('/login', {privateId: privateId}, function(data){
                     console.log(data)
                 })
                     .then(s=> {
-                        window.location = '/quizlist';
+                        window.location = '/quizzes';
                     })
             }
 

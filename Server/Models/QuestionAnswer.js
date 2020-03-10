@@ -7,6 +7,7 @@ module.exports= (sequelize, DataTypes) => {
             primaryKey: true,
             autoIncrement: true
         },
+        answer: DataTypes.STRING,
         isTrue: DataTypes.BOOLEAN
     })
 

@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             autoIncrement: true
         },
+        tour: DataTypes.INTEGER,
         countDownStart: DataTypes.DATE
     })
 

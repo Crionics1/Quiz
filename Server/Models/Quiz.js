@@ -13,6 +13,9 @@ module.exports = (sequelize, DataTypes) => {
         models.Quiz.QuizQuestions = models.Quiz.hasMany(models.QuizQuestion,{foreignKey:'quizId'})
 
         models.Quiz.Admin = models.Quiz.belongsTo(models.User, {foreignKey: 'adminId'})
+
+        models.Quiz.belongsToMany(models.User,{through: models.QuizUser, foreignKey:'quizId'})
+        models.Quiz.hasMany(models.QuizUser,{foreignKey: 'quizId'})
     }
 
     return Quiz;

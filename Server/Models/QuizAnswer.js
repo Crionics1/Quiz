@@ -14,7 +14,12 @@ module.exports = (sequelize, DataTypes) => {
         models.QuizAnswer.belongsTo(models.User, {foreignKey: 'userId'})
         models.QuizAnswer.belongsTo(models.Quiz, {foreignKey: 'quizId'})
         models.QuizAnswer.belongsTo(models.Question, {foreignKey: 'questionId'})
-        models.QuizAnswer.belongsTo(models.QuestionAnswer, {foreignKey: 'questionAnswerId'})
+        models.QuizAnswer.belongsTo(models.QuestionAnswer,
+            {foreignKey: {
+                name: 'questionAnswerId',
+                allowNull: true
+            }
+        })
     }
 
     return QuizAnswer

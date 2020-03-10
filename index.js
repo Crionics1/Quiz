@@ -61,7 +61,7 @@ app.use('/r/', async function(req,res,next){
         //IF ADMIN IS REQUESTION RENDER ADMIN PAGE
         req.clientID = await getUserID(req.cookies['token'])
         if (req.clientID == 1){
-            res.render('gameAdmin', {quizId: req.params.quizId})
+            res.render('gameForAdmin', {quizId: req.params.quizId,UserID: req.clientID})
             return
         }
         res.render('game', {quizId: req.params.quizId})
@@ -170,14 +170,14 @@ app.post('/r/quiz' ,async function(req, res){
 app.get('/quiz', async function(req,res){
     let quizzes = await models.Quiz.findAll({
         where: {gameStatus: 1},
-        attributes: ['id', 'adminId']
+        attributes: ['id']
     })
 
     res.send(JSON.stringify(quizzes, null, 2))
 })
 
 
-app.post('/r/startquiz/:quizId', async function(req,res) {
+app.post('/startquiz/:quizId', async function(req,res) {
     try{
         let quiz = await models.Quiz.findOne({where: {id: req.params.quizId, gameStatus: 1}})
 
@@ -194,60 +194,76 @@ app.post('/r/startquiz/:quizId', async function(req,res) {
         quiz.gameStatus = 2
         await quiz.save()
 
-
         res.sendStatus(200)
     }catch(error){
         res.sendStatus(500)
     }
 })
 
-app.post('/nextQuestion', async function(req,res){
-    let quizQuestion = models.QuizQuestion.findOne({
+app.post('/nextQuestion/:quizId', async function(req,res){
+    let quizQuestion = await models.QuizQuestion.findOne({
+        order:['tour','id'],
         where: {
-            quizId: req.body.quizId,
-            countDownStart:{
-                [OP.not]: null
-            },
-            order:['id']
+            quizId: req.params.quizId,
+            countDownStart: null
         },
         include:{
             model:models.Question,
-            attributes: ['isCustom','condition']
+            attributes: ['isCustom','condition'],
+            include: {
+                model: models.QuestionAnswer,
+                attributes: ['id', 'answer'],
+                required: false
+            }
         }
     })
 
+    if(quizQuestion == null){
+        io.emit('ended')
+        res.sendStatus(404)
+        return
+    }
 
+    let quizQuestionDTO = {
+        isCustom: quizQuestion.Question.isCustom,
+        questionId: quizQuestion.questionId,
+        condition: quizQuestion.Question.condition,
+        answers: quizQuestion.Question.QuestionAnswers,
+        countDownStart: quizQuestion.countDownStart
+    }
+
+    quizQuestion.countDownStart = new Date(Date.now() + 5000)
+    await quizQuestion.save()
+
+    io.emit('question',quizQuestionDTO)
+
+    res.sendStatus(200)
 })
 
-//TODO
-app.get('/quizmembers', async function(req,res){
-    let quiz = await models.User.findByPk(req.query.quizid,
+app.get('/quizmembers/:quizId', async function(req,res){
+    let result = await db.sequelize.query(
+        "select QU.userID, t.points\n" +
+        "from QuizUsers as QU\n" +
+        "left join \n" +
+        "(\n" +
+        "    select x.quizId, x.userId, sum(x.points) as Points\n" +
+        "    from \n" +
+        "    (\n" +
+        "        select QA.quizId, QA.userId, QA.questionId, Q.points, min(QA.answerTime)\n" +
+        "        from QuizAnswers as QA\n" +
+        "        inner join Questions as Q on QA.questionId = Q.id\n" +
+        "        inner join QuestionAnswers as QTA on QTA.id = QA.questionAnswerId and QTA.isTrue = 1\n" +
+        "        group by QA.quizId, QA.userId, QA.questionId, Q.points \n" +
+        "    ) as X\n" +
+        "    group by x.quizId, x.userId) as T on T.userId = QU.userId and T.quizId = QU.quizId\n" +
+        "where QU.quizID = $$quizId",
         {
-            attributes: ["firstname","lastname","id"],
-            include:[{
-                model: models.Quiz,
-                where:{ id: req.body.quiz}
-            }],
-            order: [['countDownStart','DESC']]
+            bind: {quizId: req.params.quizId},
+            type: db.sequelize.QueryTypes.SELECT
         }
-    );
+    )
 
-    let quizAnswers = models.QuizAnswer.findAll({
-        attributes: [
-            'userId',
-            [sequelize.fn('sum', sequelize.col('points')), 'points'],
-        ],
-        group: ['quizId','userId']
-    })
-
-    res.send(JSON.stringify(users,null,2))
-})
-
-//TODO
-app.get('/quizquestions',async function(req,res){
-    let quiz = await models.QuizAnswer
-
-    res.send(JSON.stringify(quiz, null, 2))
+    res.send(JSON.stringify(result,null,2))
 })
 
 app.get('/question',async function(req,res) {
@@ -270,7 +286,7 @@ db.sequelize.sync({
         privateID: 'admin'
     })
 
-    await models.Question.bulkCreate([
+    let questions = await models.Question.bulkCreate([
         {
             condition: 'which is A?',
             points: 2,
@@ -352,45 +368,45 @@ db.sequelize.sync({
             ]
         }
         ],
-        {
-            include: [{
-                association: models.Question.Answers
-            }]
-        })
-
-    let questions = models.Question.findAndCountAll({
-        include:[{
-            model: models.QuestionAnswer
+    {
+        include: [{
+            association: models.Question.Answers
         }]
     })
-    .then(q =>
-        console.log(JSON.stringify(q,null,2))
-    )
+
+
+    console.log(JSON.stringify(questions,null,2))
 
     let quiz = await models.Quiz.create({
         gameStatus : 1,
         adminId: 1
     })
 
-    let questionIds = []
-    for (let i=0; i< questions.length; i++){
-        questionIds[i] = questions[i].id
-    }
-    await quiz.setQuestions(questionIds)
+    await quiz.setUsers([1])
 
+    let quizQuestions = []
+    for (let i=0; i< questions.length; i++){
+        quizQuestions[i] = {}
+        quizQuestions[i].questionId = questions[i].id
+        quizQuestions[i].quizId = 1
+        quizQuestions[i].tour = 1
+    }
+
+    let createdQuizQuestionns = await models.QuizQuestion.bulkCreate(quizQuestions)
+    console.log(createdQuizQuestionns,null,2)
 
     const server = app.listen(5555, () => {
         console.log('Example app listening on port 5555!')
     })
 
     io = socket(server)
-
     io.on("connection",function(socket){
         socket.on('answer', async function (msg) { //get only answer id
             socket.requestTime = Date.now()
 
-            let rawCookies = socket.handshake.headers.cookie
-            let cookies = cookie.parse(rawCookies)
+            //let rawCookies = socket.handshake.headers.cookie
+            //let cookies = cookie.parse(rawCookies)
+            //socket.clientID = await getUserID(cookies.token)
 
             let question = await models.QuizQuestion.findOne({
                 where: {
@@ -403,27 +419,30 @@ db.sequelize.sync({
             })
 
             if (question == null){
+                console.log("didnt find socket requested quiz questions")
                 return
             }
 
             //if answer is late
             if ( (question.countDownStart.getSeconds() + 7) < socket.requestTime.getSeconds()){
+                console.log("question countdown has ended")
                 return
             }
 
-            socket.clientID = await getUserID(cookies.token)
+
 
             await models.QuizAnswer.create({
                 answerTime: socket.requestTime,
-                userId: socket.ClientId,
+                userId: msg.UserId,
                 questionId: msg.questionId,
                 questionAnswerId : msg.answerId
-            })
+            }) //quiz,question,user should be unique(index)
 
         });
 
-        socket.on('first',async function(msg) {
-            socket.emit('')
+        socket.on('customAnswer',async function(msg) {
+            socket.requestTime = Date.now()
+            socket.emit('customAnswer', {userId: msg.userId, answerTime:socket.requestTime})
         })
 
         console.log("Socket connection established");

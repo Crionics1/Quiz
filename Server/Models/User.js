@@ -25,6 +25,9 @@ module.exports = (sequelize, DataTypes) => {
 
         models.User.hasMany(models.QuizAnswer,{foreignKey: 'userId'})
         models.User.hasMany(models.Session, {foreignKey: 'userId'})
+
+        models.User.belongsToMany(models.Quiz,{through: models.QuizUser, foreignKey:'userId'})
+        models.User.hasMany(models.QuizUser,{foreignKey: 'userId'})
     }
     
     return User;

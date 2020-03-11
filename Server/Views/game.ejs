@@ -26,11 +26,29 @@
             currentQuestionId = data.questionId
             currentQuestionCondition = data.condition
 
-            updateAnswersGrid(data)
+            questionDiv.removeAll(true)
+
+            updateQuestionGrid(data)
             updatePointsGrid()
 
             console.log(data);
         })
+
+        function updateQuestionGrid(data){
+            debugger
+
+            if(!data.isCustom){
+                questionDiv.add(questionGrid)
+                questionGrid.setTitle(data.condition)
+                answersStore.loadData(data.answers)
+            }
+            if(data.isCustom){
+                questionDiv.add(customQuestionField)
+                questionDiv.add(customQuestionSubmit)
+            }
+
+
+        }
 
 
         var pointsDiv = Ext.create('Ext.Panel',{
@@ -51,6 +69,7 @@
                 { text: 'UserID', dataIndex: 'id' },
                 { text: 'Points',  dataIndex: 'points'}
             ],
+            sortInfo: { field: "Points", direction: "ASC" },
             height: 200,
             width: 400,
         });
@@ -58,7 +77,7 @@
         pointsDiv.add(pointsGrid)
 
         function updatePointsGrid(){
-            $.getJSON("/quizmembers/quizId", function (data) {
+            $.getJSON(`/quizmembers/${quizId}`, function (data) {
                 pointsStore.loadData(data)
             })
         }
@@ -92,7 +111,7 @@
             width: 400
         });
 
-        let customQuestionInput = Ext.create('Ext.field.input')
+        let customQuestionField = Ext.create('Ext.field.input')
         let customQuestionSubmit = Ext.create('Ext.Button', 
         {
             text: 'Answer',
@@ -101,20 +120,7 @@
             }
         }); 
 
-        function updateQuestionGrid(data){
-            debugger
-
-            if(data.isCustom = 0){
-                questionDiv.add(questionGrid)
-                questionGrid.setTitle(data.condition)
-                answersStore.loadData(data.answers)
-            }
-            if(data.isCustom = 1){
-                //render custom question component
-            }
-
-
-        }
+        
 
         function emitAnswer(answerId){
             socket.emit('answer',

@@ -227,16 +227,17 @@ app.post('/nextQuestion/:quizId', async function(req,res){
         return
     }
 
+    quizQuestion.countDownStart = new Date(Date.now() + 5000)
+    await quizQuestion.save()
+
     let quizQuestionDTO = {
         isCustom: quizQuestion.Question.isCustom,
         questionId: quizQuestion.questionId,
+        tour: quizQuestion.tour,
         condition: quizQuestion.Question.condition,
         answers: quizQuestion.Question.QuestionAnswers,
         countDownStart: quizQuestion.countDownStart
     }
-
-    quizQuestion.countDownStart = new Date(Date.now() + 5000)
-    await quizQuestion.save()
 
     io.emit('question',quizQuestionDTO)
 
@@ -245,7 +246,7 @@ app.post('/nextQuestion/:quizId', async function(req,res){
 
 app.get('/quizmembers/:quizId', async function(req,res){
     let result = await db.sequelize.query(
-        "select QU.userID, t.points\n" +
+        "select QU.userID as id, ifnull(t.points,0) as points\n" +
         "from QuizUsers as QU\n" +
         "left join \n" +
         "(\n" +
@@ -258,10 +259,11 @@ app.get('/quizmembers/:quizId', async function(req,res){
         "        inner join QuestionAnswers as QTA on QTA.id = QA.questionAnswerId and QTA.isTrue = 1\n" +
         "        group by QA.quizId, QA.questionId, Q.points \n" +
         "    ) as X\n" +
-        "\tinner join QuizAnswers QA on QA.quizID = X.quizId and QA.questionId = X.questionId and QA.answerTime = X.answerTime\n" +
-        "    group by QA.quizId, QA.userId) \n" +
-        "as T on T.userId = QU.userId and T.quizId = QU.quizId\n" +
-        "where QU.quizID = $$quizId",
+        "   inner join QuizAnswers QA on QA.quizID = X.quizId and QA.questionId = X.questionId and QA.answerTime = X.answerTime\n" +
+        "   group by QA.quizId, QA.userId \n" +
+        "   limit 1\n"+
+        ")as T on T.userId = QU.userId and T.quizId = QU.quizId\n" +
+        "where QU.quizID = $quizId",
         {
             bind: {quizId: req.params.quizId},
             type: db.sequelize.QueryTypes.SELECT
@@ -289,6 +291,12 @@ db.sequelize.sync({
         firstName: 'luka',
         lastName: 'turmanidze',
         privateID: 'admin'
+    })
+
+    let user2= await models.User.create({
+        firstName: 'user2',
+        lastName: 'user2',
+        privateID: 'user2'
     })
 
     let questions = await models.Question.bulkCreate([
@@ -387,7 +395,9 @@ db.sequelize.sync({
         adminId: 1
     })
 
-    await quiz.setUsers([1])
+    await quiz.setUsers([1, 2])
+
+
 
     let quizQuestions = []
     for (let i=0; i< questions.length; i++){

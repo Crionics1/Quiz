@@ -246,16 +246,18 @@ app.get('/quizmembers/:quizId', async function(req,res){
         "from QuizUsers as QU\n" +
         "left join \n" +
         "(\n" +
-        "    select x.quizId, x.userId, sum(x.points) as Points\n" +
+        "    select x.quizId, QA.userId, sum(x.points) as points\n" +
         "    from \n" +
         "    (\n" +
-        "        select QA.quizId, QA.userId, QA.questionId, Q.points, min(QA.answerTime)\n" +
+        "        select QA.quizId, QA.questionId, Q.points, min(QA.answerTime) as answerTime\n" +
         "        from QuizAnswers as QA\n" +
         "        inner join Questions as Q on QA.questionId = Q.id\n" +
         "        inner join QuestionAnswers as QTA on QTA.id = QA.questionAnswerId and QTA.isTrue = 1\n" +
-        "        group by QA.quizId, QA.userId, QA.questionId, Q.points \n" +
+        "        group by QA.quizId, QA.questionId, Q.points \n" +
         "    ) as X\n" +
-        "    group by x.quizId, x.userId) as T on T.userId = QU.userId and T.quizId = QU.quizId\n" +
+        "\tinner join QuizAnswers QA on QA.quizID = X.quizId and QA.questionId = X.questionId and QA.answerTime = X.answerTime\n" +
+        "    group by QA.quizId, QA.userId) \n" +
+        "as T on T.userId = QU.userId and T.quizId = QU.quizId\n" +
         "where QU.quizID = $$quizId",
         {
             bind: {quizId: req.params.quizId},

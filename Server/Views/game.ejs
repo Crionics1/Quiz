@@ -6,74 +6,125 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/extjs/6.2.0/classic/theme-classic/resources/theme-classic-all.css" type="text/css">
 </head>
 <body>
-    <button onclick="startQuiz()"> Start Game </button>
 
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/extjs/6.2.0/ext-all.js"></script>
     <script>
-        let userId = <%=userId%>
-        let quizId = <%=quizId%>
+        const userId = <%=userId%>;
+        let quizId = <%=quizId%>;
+        let currentQuestionId = null
+        let currentQuestionCondition = null
 
         const socket = io.connect("localhost:5555")
 
-        socket.on('ended',function (date){
-
+        socket.on('ended',function (data){
+            //TODO
         })
 
-
         socket.on('question',function (data) {
-            Ext.create('Ext.data.Store', {
-                storeId: 'answers',
-                fields:['id','answer'],
-                data: data.answers
-            });
+            currentQuestionId = data.questionId
+            currentQuestionCondition = data.condition
 
-
-            Ext.create('Ext.grid.Panel', {
-                title: data.condition,
-                store: Ext.data.StoreManager.lookup('answers'),
-                columns: [
-                    { text: 'UserID', dataIndex: 'id' },
-                    { text: 'Points',  dataIndex: 'points'}
-                ],
-                height: 200,
-                width: 400,
-                renderTo: Ext.getBody()
-            });
-
+            updateAnswersGrid(data)
+            updatePointsGrid()
 
             console.log(data);
         })
 
-        function startQuiz(){
-            $.post(`/r/startQuiz/${quizId}`,function () {
 
+        var pointsDiv = Ext.create('Ext.Panel',{
+            renderTo:Ext.getBody(),
+        })
+
+        var pointsStore = Ext.create('Ext.data.Store', 
+        {
+            storeId: 'quizmembers',
+            fields:['id', 'points']
+        });
+
+        var pointsGrid = Ext.create('Ext.grid.Panel', 
+        {
+            title: 'quizmembers',
+            store: Ext.data.StoreManager.lookup('quizmembers'),
+            columns: [
+                { text: 'UserID', dataIndex: 'id' },
+                { text: 'Points',  dataIndex: 'points'}
+            ],
+            height: 200,
+            width: 400,
+        });
+
+        pointsDiv.add(pointsGrid)
+
+        function updatePointsGrid(){
+            $.getJSON("/quizmembers/quizId", function (data) {
+                pointsStore.loadData(data)
             })
         }
+        ///////////////////////////////
+        
+        var questionDiv = Ext.create('Ext.Panel',{
+            renderTo: Ext.getBody(),
+        })
 
-        $( document ).ready(function() {
-            $.getJSON("/quizmembers/quizId", function (data) {
-                Ext.create('Ext.data.Store', {
-                    storeId: 'quizmembers',
-                    fields:['id', 'points'],
-                    data: data
-                });
-
-                Ext.create('Ext.grid.Panel', {
-                    title: 'quizmembers',
-                    store: Ext.data.StoreManager.lookup('quizmembers'),
-                    columns: [
-                        { text: 'UserID', dataIndex: 'id' },
-                        { text: 'Points',  dataIndex: 'points'}
-                    ],
-                    height: 200,
-                    width: 400,
-                    renderTo: Ext.getBody()
-                });
-            })
-
-
+        var answersStore = Ext.create('Ext.data.Store', 
+        {
+            storeId: 'answers',
+            fields:['id', 'answer']
         });
+
+        var questionGrid = Ext.create('Ext.grid.Panel', 
+        {
+            title: currentQuestionCondition,
+            store: answersStore,
+            columns: [
+                { text: 'id', dataIndex: 'id' },
+                { text: 'answer',  dataIndex: 'answer'},
+                {
+                    text:'Submit', dataIndex:'id',
+                    renderer: function(value) {
+                        return Ext.String.format('<button onClick="emitAnswer({0})">Submit</button>', value);
+                    }
+                }
+            ],
+            height: 200,
+            width: 400
+        });
+
+        let customQuestionInput = Ext.create('Ext.field.input')
+        let customQuestionSubmit = Ext.create('Ext.Button', 
+        {
+            text: 'Answer',
+            handler: function() {
+                socket.emit('customAnswer',{userId: userId})
+            }
+        }); 
+
+        function updateQuestionGrid(data){
+            debugger
+
+            if(data.isCustom = 0){
+                questionDiv.add(questionGrid)
+                questionGrid.setTitle(data.condition)
+                answersStore.loadData(data.answers)
+            }
+            if(data.isCustom = 1){
+                //render custom question component
+            }
+
+
+        }
+
+        function emitAnswer(answerId){
+            socket.emit('answer',
+            {
+                quizId: quizId,
+                userId: userId,
+                questionId: currentQuestionId,
+                questionAnswerId : answerId
+            })
+        }
     </script>
 </body>
 </html>

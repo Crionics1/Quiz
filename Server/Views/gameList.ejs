@@ -8,9 +8,10 @@
     <body>
 
 
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/extjs/6.2.0/ext-all.js"></script>
-        <script src="/jquery-1.9.1.min.js"></script>
-        <script>
+            <script>
 
             /*
             $.getJSON("/quiz", function (data) {
@@ -25,6 +26,7 @@
             })
             */
             $( document ).ready(function() {
+                debugger
                 $.getJSON("/quiz", function (data) {
                     Ext.create('Ext.data.Store', {
                         storeId: 'quizzes',

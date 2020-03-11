@@ -60,11 +60,14 @@ app.use('/r/', async function(req,res,next){
     app.get('/quiz/:quizId', async function(req,res){
         //IF ADMIN IS REQUESTION RENDER ADMIN PAGE
         req.clientID = await getUserID(req.cookies['token'])
+        /*
         if (req.clientID == 1){
-            res.render('gameForAdmin', {quizId: req.params.quizId,UserID: req.clientID})
+            res.render('gameForAdmin', {quizId: req.params.quizId,userId: req.clientID})
             return
         }
-        res.render('game', {quizId: req.params.quizId})
+        for testing*/ 
+
+        res.render('game', {quizId: req.params.quizId, userId: req.clientID})
     })
 
 //</editor-fold>
@@ -435,7 +438,8 @@ db.sequelize.sync({
 
             await models.QuizAnswer.create({
                 answerTime: socket.requestTime,
-                userId: msg.UserId,
+                quizId: msg.quizId,
+                userId: msg.userId,
                 questionId: msg.questionId,
                 questionAnswerId : msg.answerId
             }) //quiz,question,user should be unique(index)

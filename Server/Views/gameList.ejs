@@ -28,11 +28,7 @@
             $( document ).ready(function() {
                 debugger
                 $.getJSON("/quiz", function (data) {
-                    Ext.create('Ext.data.Store', {
-                        storeId: 'quizzes',
-                        fields:['id'],
-                        data: data
-                    });
+                   ;
 
                     Ext.create('Ext.grid.Panel', {
                         title: 'Quizzes',

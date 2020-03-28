@@ -131,15 +131,15 @@ app.get('/quiz', async function (req, res) {
     let quizzes = await models.Quiz.findAll({
         where: { gameStatus: 1 },
         attributes: ['id']
-    })
+    });
 
-    res.send(JSON.stringify(quizzes, null, 2))
+    res.send(JSON.stringify(quizzes, null, 2));
 })
 
 
 app.post('/startquiz/:quizId', async function (req, res) {
     try {
-        let quiz = await models.Quiz.findOne({ where: { id: req.params.quizId, gameStatus: 1 } })
+        let quiz = await models.Quiz.findOne({ where: { id: req.params.quizId, gameStatus: 1 } });
 
         if (quiz == null) {
             res.sendStatus(404)
@@ -152,11 +152,11 @@ app.post('/startquiz/:quizId', async function (req, res) {
         }
 
         quiz.gameStatus = 2
-        await quiz.save()
+        await quiz.save();
 
-        res.sendStatus(200)
+        res.sendStatus(200);
     } catch (error) {
-        res.sendStatus(500)
+        res.sendStatus(500);
     }
 })
 
@@ -171,19 +171,32 @@ app.get('/currentQuestion/:quizId', async function (req, res) {
         },
         include: {
             model: models.Question,
-            attributes: ['isCustom', 'condition'],
+            attributes: ['id', 'isCustom', 'condition'],
             include: {
                 model: models.QuestionAnswer,
-                attributes: ['id', 'answer'],
+                attributes: ['id', 'answer', 'questionId'],
                 required: false
             }
         }
-    })
+    });
 
-    res.send(JSON.stringify(question.Question,null,2))
+    if(question == null || question.countDownStart.getTime() + 7 < Date.now()){
+        res.sendStatus(404)
+        return
+    }
+
+    question.Question.countDownStart = question.countDownStart;
+
+    res.send(JSON.stringify(question.Question,null,2));
 })
 
 app.post('/nextQuestion/:quizId', async function (req, res) {
+    let quiz = await models.Quiz.findByPk(req.params.quizId);
+    if (quiz == null) {
+        res.sendStatus(404)
+        return
+    }
+
     let quizQuestion = await models.QuizQuestion.findOne({
         order: ['tour', 'id'],
         where: {
@@ -199,16 +212,18 @@ app.post('/nextQuestion/:quizId', async function (req, res) {
                 required: false
             }
         }
-    })
+    });
 
     if (quizQuestion == null) {
-        io.emit('ended')
-        res.sendStatus(404)
+        io.emit('ended');
+        quiz.gameStatus = 3; //ended
+        await quiz.save()
+        res.sendStatus(404);
         return
     }
 
-    quizQuestion.countDownStart = new Date(Date.now() + 5000)
-    await quizQuestion.save()
+    quizQuestion.countDownStart = new Date(Date.now() + 5000);
+    await quizQuestion.save();
 
     let quizQuestionDTO = {
         isCustom: quizQuestion.Question.isCustom,

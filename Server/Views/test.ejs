@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/extjs/6.2.0/ext-all.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/extjs/6.2.0/classic/theme-classic/resources/theme-classic-all.css" type="text/css">
+</head>
+<body>
+    <script src="/ExtJS/game/store.js"></script>
+    <script src="/ExtJS/game/models.js"></script>
+    <script>
+        const userId = <%=userId%>;
+        const quizId = <%=quizId%>;
+        let currentQuestionId = null
+        let currentQuestionCondition = null
+
+        /*
+        var questionCard = Ext.define('QuestionCard',{
+            extend: 'Ext.grid.Panel',
+            alias: 'questionCard',
+
+            title: currentQuestionCondition,
+            store: 'Answers',
+            columns: [
+                { text: 'answer',  dataIndex: 'answer'},
+                {
+                    text:'Submit', dataIndex:'id',
+                    renderer: function(value) {
+                        return Ext.String.format('<button onClick="emitAnswer({0})">Submit</button>', value);
+                    }
+                }
+            ]
+        })
+
+        var customQuestionCard = Ext.define('CustomQuestionCard', {
+            extend: 'Ext.Panel',
+            alias: 'customQuestionCard',
+
+            title: currentQuestionCondition,
+            items:[
+                {
+                    html: currentQuestionCondition
+                },
+                {
+                    text: 'Answer',
+                    xtype: 'button',
+                    handler: function() {
+                        io.emit('customAnswer', {userId: userId})
+                    }
+                }
+            ]
+        })
+
+
+        var cards = Ext.define('Cards',{
+            exted: 'Ext.Panel',
+            alias: 'cards',
+
+            columnWidth: 0.7,
+            title: 'Current Question',
+            layout: 'card',
+            items: [
+                QuestionCard,
+                CustomQuestionCard
+            ]
+        })
+        */
+
+        Ext.application({
+            name: 'Quiz',
+
+            launch: function() {
+                Ext.create('Ext.container.Viewport', {
+                    xtype: 'panel',
+                    layout: 'column',
+                   
+                    items: [
+                        /*{
+                            columnWidth: 0.7,
+                            xtype: 'panel',
+                            layout: 'card',
+                            items:[
+                                {
+                                    html: 'card 1',
+                                },{
+                                    html: 'card 2'
+                                }
+                            ]
+                        },*/
+                        {
+                            xtype: 'grid',
+                            columnWidth : 0.3,
+                            title: 'Score Board',
+                            requires:[
+                                'Quiz.store.ScoreBoard'
+                            ],
+                            store: 'scoreBoard',
+                            columns: [
+                                { text: 'UserID', dataIndex: 'id' },
+                                { text: 'Points',  dataIndex: 'points'}
+                            ],
+                            sortInfo: { field: "Points", direction: "ASC" }
+                        }
+                    ]
+                })
+            }
+        })
+        
+        /*
+        const socket = io.connect("localhost:5555")
+
+        socket.on('ended',function (data){
+            //TODO
+        })
+        socket.on('question',function (data) {
+            currentQuestionId = data.questionId
+            currentQuestionCondition = data.condition
+
+            if(!data.isCustom){
+                questionGrid.setTitle(data.condition)
+                answersStore.loadData(data.answers)
+                questionCards.setActiveItem(0)
+            }
+                
+            if(data.isCustom){
+                customQuestionCondition.setText(currentQuestionCondition)
+                questionCards.setActiveItem(1)
+            }
+            
+            Ext.data.StoreManager.lookup('score').load()
+
+            console.log(data);
+        })
+        */
+    </script>
+</body>
+</html>
